@@ -1,18 +1,20 @@
 package:
-  name: libnetcdf
-  version: 4.4.0
+  name: libnetcdff
+  version: 4.4.4
 
 source:
-  fn: netcdf-4.4.0.tar.gz
-  url: ftp://ftp.unidata.ucar.edu/pub/netcdf/netcdf-4.4.0.tar.gz
-  md5: cffda0cbd97fdb3a06e9274f7aef438e
+  fn: netcdf-fortran-4.4.4.tar.gz
+  url: ftp://ftp.unidata.ucar.edu/pub/netcdf/netcdf-fortran-4.4.4.tar.gz
+  md5: e855c789cd72e1b8bc1354366bf6ac72
 
 requirements:
   build:
+    - libnetcdf 4.4.0
     - curl
     - hdf5
     - zlib
   run:
+    - libnetcdf 4.4.0
     - curl
     - hdf5
     - zlib
