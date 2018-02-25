@@ -1,5 +1,8 @@
 #!/bin/bash
 
+aclocal -I m4
+autoconf
+
 # Without setting these, R goes off and tries to find things on its own, which
 # we don't want (we only want it to find stuff in the build environment).
 
@@ -19,14 +22,15 @@ export TCL_LIBRARY=$PREFIX/lib/tcl8.5
 export TK_LIBRARY=$PREFIX/lib/tk8.5
 
 Linux() {
-    # There's probably a much better way to do this.
-    . ${RECIPE_DIR}/java.rc
-    if [ -n "$JDK_HOME" -a -n "$JAVA_HOME" ]; then
-        export JAVA_CPPFLAGS="-I$JDK_HOME/include -I$JDK_HOME/include/linux"
-        export JAVA_LD_LIBRARY_PATH=${JAVA_HOME}/lib/amd64/server
-    else
-        echo warning: JDK_HOME and JAVA_HOME not set
-    fi
+    # If lib/R/etc/javaconf ends up with anything other than ~autodetect~
+    # for any value (except JAVA_HOME) then 'R CMD javareconf' will never
+    # change it, so we prevent configure from finding Java.  post-install
+    # and activate scripts now call 'R CMD javareconf'.
+    unset JAVA_HOME
+
+    # This is needed to force pkg-config to *also* search for system libraries.
+    # We cannot use cairo without this since it depends on a good few X11 things.
+    export PKG_CONFIG_PATH=/usr/lib/pkgconfig
 
     mkdir -p $PREFIX/lib
 
@@ -34,16 +38,23 @@ Linux() {
                 --enable-shared                 \
                 --enable-R-shlib                \
                 --enable-BLAS-shlib             \
-                --disable-R-profiling           \
                 --disable-prebuilt-html         \
-                --disable-memory-profiling      \
+                --enable-memory-profiling       \
                 --with-tk-config=${TK_CONFIG}   \
                 --with-tcl-config=${TCL_CONFIG} \
                 --with-x                        \
                 --with-pic                      \
                 --with-cairo                    \
+                --with-curses                   \
+                --with-readline                 \
                 --with-recommended-packages=no  \
                 LIBnn=lib
+
+    if cat src/include/config.h | grep "undef HAVE_PANGOCAIRO"; then
+        echo "Did not find pangocairo, refusing to continue"
+        cat config.log | grep pango
+        exit 1
+    fi
 
     make -j${CPU_COUNT}
     # echo "Running make check-all, this will take some time ..."
@@ -58,13 +69,7 @@ Linux() {
 # it should be compiling sys-win32.c instead. Eventually it would be nice to fix
 # the Autotools build framework so that can be used for Windows builds too.
 Mingw_w64_autotools() {
-    . ${RECIPE_DIR}/java.rc
-    if [ -n "$JDK_HOME" -a -n "$JAVA_HOME" ]; then
-        export JAVA_CPPFLAGS="-I$JDK_HOME/include -I$JDK_HOME/include/linux"
-        export JAVA_LD_LIBRARY_PATH=${JAVA_HOME}/lib/amd64/server
-    else
-        echo warning: JDK_HOME and JAVA_HOME not set
-    fi
+    unset JAVA_HOME
 
     mkdir -p ${PREFIX}/lib
     export TCL_CONFIG=$PREFIX/Library/mingw-w64/lib/tclConfig.sh
@@ -79,9 +84,8 @@ Mingw_w64_autotools() {
                 --enable-shared                 \
                 --enable-R-shlib                \
                 --enable-BLAS-shlib             \
-                --disable-R-profiling           \
                 --disable-prebuilt-html         \
-                --disable-memory-profiling      \
+                --enable-memory-profiling       \
                 --with-tk-config=$TK_CONFIG     \
                 --with-tcl-config=$TCL_CONFIG   \
                 --with-x=no                     \
@@ -178,9 +182,9 @@ Mingw_w64_makefiles() {
         # The thing to is probably to make stub programs launching the right binaries in mingw-w64/bin
         # .. perhaps launcher.c can be generalized?
         mkdir -p "${SRC_DIR}/Tcl"
-        conda install -c https://conda.anaconda.org/msys2 \
-                      --no-deps --yes --copy --prefix "${SRC_DIR}/Tcl" \
-                      m2w64-{tcl,tk,bwidget,tktable}
+        conda.bat install -c https://conda.anaconda.org/msys2 \
+                          --no-deps --yes --copy --prefix "${SRC_DIR}/Tcl" \
+                          m2w64-{tcl,tk,bwidget,tktable}
         mv "${SRC_DIR}"/Tcl/Library/mingw-w64/* "${SRC_DIR}"/Tcl/
         rm -Rf "${SRC_DIR}"/Tcl/{Library,conda-meta,.BUILDINFO,.MTREE,.PKGINFO}
         if [[ "${ARCH}" == "64" ]]; then
@@ -205,7 +209,7 @@ Mingw_w64_makefiles() {
     fi
 
     # Horrible. We need MiKTeX or something like it (for pdflatex.exe. Building from source
-    # may be posslbe but requires CLisp and I've not got time for that at present).  w32tex
+    # may be possible but requires CLisp and I've not got time for that at present).  w32tex
     # looks a little less horrible than MiKTex (just read their build instructions and cry:
     # For  example:
     # Cygwin
@@ -243,14 +247,17 @@ Mingw_w64_makefiles() {
       # http://ctan.mines-albi.fr/systems/win32/miktex/tm/packages/url.tar.lzma
       # http://ctan.mines-albi.fr/systems/win32/miktex/tm/packages/mptopdf.tar.lzma
       # http://ctan.mines-albi.fr/systems/win32/miktex/tm/packages/inconsolata.tar.lzma
-        curl -C - -o ${DLCACHE}/miktex-portable-2.9.5857.exe -SLO http://mirrors.ctan.org/systems/win32/miktex/setup/miktex-portable-2.9.5857.exe || true
-        echo "Extracting miktex-portable-2.9.5857.exe, this will take some time ..."
-        7za x -y ${DLCACHE}/miktex-portable-2.9.5857.exe > /dev/null
+        curl -C - -o ${DLCACHE}/miktex-portable-2.9.6361.exe -SLO http://ctan.mirrors.hoobly.com/systems/win32/miktex/setup/miktex-portable-2.9.6361.exe || true
+        echo "Extracting miktex-portable-2.9.6361.exe, this will take some time ..."
+        7za x -y ${DLCACHE}/miktex-portable-2.9.6361.exe > /dev/null
         # We also need the url, incolsolata and mptopdf packages and
         # do not want a GUI to prompt us about installing these.
-        sed -i 's|AutoInstall=2|AutoInstall=1|g' miktex/config/miktex.ini
+        # sed -i 's|AutoInstall=2|AutoInstall=1|g' miktex/config/miktex.ini
         #see also: http://tex.stackexchange.com/q/302679
-        PATH=${PWD}/miktex/bin:${PATH}
+        PATH=${PWD}/texmfs/install/miktex/bin:${PATH}
+        initexmf.exe --set-config-value [MPM]AutoInstall=1
+        initexmf.exe --update-fndb
+        cat texmfs/config/miktex/config/miktex.ini
       popd
     fi
 
@@ -260,13 +267,14 @@ Mingw_w64_makefiles() {
     cd "${SRC_DIR}/src/gnuwin32"
     if [[ "${_use_msys2_mingw_w64_tcltk}" == "yes" ]]; then
         # rinstaller and crandir would come after manuals (if it worked with MSYS2/mingw-w64-{tcl,tk}, in which case we'd just use make distribution anyway)
-        echo "***** Build started *****" > make_staged.log
+        echo "***** R-${PACKAGE_VERSION} Build started *****"
         for _stage in all cairodevices recommended vignettes manuals; do
-            echo "***** Stage started ${_stage} *****" >> make_staged.log
-            make ${_stage} -j${CPU_COUNT} >> make_staged.log 2>&1
+            echo "***** R-${PACKAGE_VERSION} Stage started: ${_stage} *****"
+            make ${_stage} -j${CPU_COUNT}
         done
     else
-        make distribution -j${CPU_COUNT} > make_distribution.log 2>&1
+    echo "***** R-${PACKAGE_VERSION} Stage started: distribution *****"
+        make distribution -j${CPU_COUNT}
     fi
     # The flakiness mentioned below can be seen if the values are hacked to:
     # supremum error =  0.022  with p-value= 1e-04
@@ -281,11 +289,11 @@ Mingw_w64_makefiles() {
     # make check-all -j1 > make-check.log 2>&1 || make check-all -j1 > make-check.2.log 2>&1 || make check-all -j1 > make-check.3.log 2>&1
     cd installer
     make imagedir
-    cp -Rf R-3.3.0 R
+    cp -Rf R-${PKG_VERSION} R
     cp -Rf R "${PREFIX}"/
     # Remove the recommeded libraries, we package them separately as-per the other platforms now.
     rm -Rf "${PREFIX}"/R/library/{MASS,lattice,Matrix,nlme,survival,boot,cluster,codetools,foreign,KernSmooth,rpart,class,nnet,spatial,mgcv}
-    # * Here we force our MSYS2/mingw-w64 sysroot to be looked in for libraies during r-packages builds.
+    # * Here we force our MSYS2/mingw-w64 sysroot to be looked in for libraries during r-packages builds.
     for _makeconf in $(find "${PREFIX}"/R -name Makeconf); do
         sed -i 's|LOCAL_SOFT = |LOCAL_SOFT = \$(R_HOME)/../Library/mingw-w64|g' ${_makeconf}
         sed -i 's|^BINPREF ?= .*$|BINPREF ?= \$(R_HOME)/../Library/mingw-w64/bin/|g' ${_makeconf}
@@ -294,16 +302,21 @@ Mingw_w64_makefiles() {
 }
 
 Darwin() {
+    unset JAVA_HOME
     # Without this, it will not find libgfortran. We do not use
     # DYLD_LIBRARY_PATH because that screws up some of the system libraries
     # that have older versions of libjpeg than the one we are using
     # here. DYLD_FALLBACK_LIBRARY_PATH will only come into play if it cannot
     # find the library via normal means. The default comes from 'man dyld'.
-    export DYLD_FALLBACK_LIBRARY_PATH=$PREFIX/lib:$(HOME)/lib:/usr/local/lib:/lib:/usr/lib
-
+    export DYLD_FALLBACK_LIBRARY_PATH=$PREFIX/lib:/usr/local/lib:/lib:/usr/lib
     # Prevent configure from finding Fink or Homebrew.
-
-    export PATH=$PREFIX/bin:/usr/bin:/bin:/usr/sbin:/sbin
+    # [*] Since R 3.0, the configure script prevents using any DYLD_* on Darwin,
+    # after a certain point, claiming each dylib had an absolute ID path.
+    # Patch 008-Darwin-set-DYLD_FALLBACK_LIBRARY_PATH.patch corrects this and uses
+    # the same mechanism as Linux (and others) where configure transfers path from
+    # LDFLAGS=-L<path> into DYLD_FALLBACK_LIBRARY_PATH. Note we need to use both
+    # DYLD_FALLBACK_LIBRARY_PATH and LDFLAGS for different stages of configure.
+    export LDFLAGS=$LDFLAGS" -L${PREFIX}"
 
     cat >> config.site <<EOF
 CC=clang
@@ -312,12 +325,26 @@ F77=gfortran
 OBJC=clang
 EOF
 
+    # --without-internal-tzcode to avoid warnings:
+    # unknown timezone 'Europe/London'
+    # unknown timezone 'GMT'
+    # https://stat.ethz.ch/pipermail/r-devel/2014-April/068745.html
+
+    if ! which texlive; then
+      echo "no texlive in PATH, refusing to build this, conda or conda-build are buggy or tex failed to install or something"
+      echo "You may need to copy texliveonfly to texlive? Seems they decided to rename it for no good reason."
+      exit 1
+    fi
+
     ./configure --prefix=$PREFIX                    \
                 --with-blas="-framework Accelerate" \
                 --with-lapack                       \
                 --enable-R-shlib                    \
+                --enable-memory-profiling           \
                 --without-x                         \
-                --enable-R-framework=no
+                --without-internal-tzcode           \
+                --enable-R-framework=no             \
+                --with-recommended-packages=no
 
     make -j${CPU_COUNT}
     # echo "Running make check-all, this will take some time ..."
@@ -328,12 +355,23 @@ EOF
 case `uname` in
     Darwin)
         Darwin
+        mkdir -p ${PREFIX}/etc/conda/activate.d
+        cp "${RECIPE_DIR}"/activate-${PKG_NAME}.sh ${PREFIX}/etc/conda/activate.d/activate-${PKG_NAME}.sh
         ;;
     Linux)
         Linux
+        mkdir -p ${PREFIX}/etc/conda/activate.d
+        cp "${RECIPE_DIR}"/activate-${PKG_NAME}.sh ${PREFIX}/etc/conda/activate.d/activate-${PKG_NAME}.sh
         ;;
     MINGW*)
         # Mingw_w64_autotools
         Mingw_w64_makefiles
         ;;
 esac
+
+cairo_so=$(find ${PREFIX} -name "cairo.so")
+if ldd ${cairo_so} || grep /usr/lib64/libpng; then
+  echo "Broken, ${cairo_so} links to system libpng (and probably pango and pangocairo)"
+  exit 1
+fi
+

@@ -1,52 +1,54 @@
+{% set version = '0.9.6' %}
+
 {% set posix = 'm2-' if win else '' %}
 {% set native = 'm2w64-' if win else '' %}
 
 package:
   name: r-openssl
-  # Note that conda versions cannot contain -, so any -'s in the version have
-  # been replaced with _'s.
-  version: "0.9.3"
+  version: {{ version|replace("-", "_") }}
 
 source:
-  fn: openssl_0.9.3.tar.gz
+  fn: openssl_{{ version }}.tar.gz
   url:
-    - http://cran.r-project.org/src/contrib/openssl_0.9.3.tar.gz
-    - http://cran.r-project.org/src/contrib/Archive/openssl/openssl_0.9.3.tar.gz
+    - https://cran.r-project.org/src/contrib/openssl_{{ version }}.tar.gz
+    - https://cran.r-project.org/src/contrib/Archive/openssl/openssl_{{ version }}.tar.gz
 
 
-  # You can add a hash for the file here, like md5 or sha1
-  # md5: 49448ba4863157652311cc5ea4fea3ea
-  # sha1: 3bcfbee008276084cbb37a2b453963c61176a322
+  sha256: 6dd6d1cade4004962d516ad761fff0812beec0232318b385d286761423a5dc39
   # patches:
    # List any patch files here
    # - fix.patch
 
 build:
-  # If this is a new build for the same version, increment the build
-  # number. If you do not include this key, it defaults to 0.
-  # number: 1
+  # If this is a new build for the same version, increment the build number.
+  number: 0
 
   # This is required to make R link correctly on Linux.
   rpaths:
     - lib/R/lib/
     - lib/
 
-# Suggests: testthat, digest, knitr, rmarkdown, jsonlite
+# Suggests: testthat, digest, knitr, rmarkdown, jsonlite, jose
 requirements:
   build:
     - r-base
-    - posix               # [win]
-    - {{native}}toolchain # [win]
-    - gcc                 # [not win]
+    - posix                # [win]
+    - {{posix}}pkg-config  # [not win]
+    - {{native}}toolchain  # [win]
+    - openssl              # [not win]
+    - gcc                  # [not win]
 
   run:
     - r-base
+    - {{native}}gcc-libs   # [win]
+    - libgcc               # [not win]
+    - openssl              # [not win]
 
 test:
   commands:
     # You can put additional test commands to be run here.
-    - $R -e "library('openssl')" # [not win]
-    - "\"%R%\" -e \"library('openssl')\"" # [win]
+    - $R -e "library('openssl')"  # [not win]
+    - "\"%R%\" -e \"library('openssl')\""  # [win]
 
   # You can also put a file called run_test.py, run_test.sh, or run_test.bat
   # in the recipe that will be run at test time.
@@ -58,13 +60,14 @@ about:
   home: https://github.com/jeroenooms/openssl#readme
   license: MIT + file LICENSE
   summary: Bindings to OpenSSL libssl and libcrypto, plus custom SSH pubkey parsers. Supports
-    RSA, DSA and NIST curves P-256, P-384 and P-521. Cryptographic signatures can either
-    be created and verified manually or via x509 certificates. AES block cipher is used
-    in CBC mode for symmetric encryption; RSA for asymmetric (public key) encryption.
-    High-level envelope functions combine RSA and AES for encrypting arbitrary sized
-    data. Other utilities include key generators, hash functions (md5, sha1, sha256,
-    etc), base64 encoder, a secure random number generator, and 'bignum' math methods
-    for manually performing crypto calculations on large multibyte integers.
+    RSA, DSA and EC curves P-256, P-384 and P-521. Cryptographic signatures can either
+    be created and verified manually or via x509 certificates. AES can be used in cbc,
+    ctr or gcm mode for symmetric encryption; RSA for asymmetric (public key) encryption
+    or EC for Diffie Hellman. High-level envelope functions combine RSA and AES for
+    encrypting arbitrary sized data. Other utilities include key generators, hash functions
+    (md5, sha1, sha256, etc), base64 encoder, a secure random number generator, and
+    'bignum' math methods for manually performing crypto calculations on large multibyte
+    integers.
   license_family: MIT
 
 # The original CRAN metadata for this package was:
@@ -72,22 +75,22 @@ about:
 # Package: openssl
 # Type: Package
 # Title: Toolkit for Encryption, Signatures and Certificates Based on OpenSSL
-# Version: 0.9.3
+# Version: 0.9.6
 # Authors@R: c( person("Jeroen", "Ooms", , "jeroen.ooms@stat.ucla.edu", role = c("cre", "aut")), person("Oliver", "Keyes", role = "ctb"))
-# Description: Bindings to OpenSSL libssl and libcrypto, plus custom SSH pubkey parsers. Supports RSA, DSA and NIST curves P-256, P-384 and P-521. Cryptographic signatures can either be created and verified manually or via x509 certificates. AES block cipher is used in CBC mode for symmetric encryption; RSA for asymmetric (public key) encryption. High-level envelope functions combine RSA and AES for encrypting arbitrary sized data. Other utilities include key generators, hash functions (md5, sha1, sha256, etc), base64 encoder, a secure random number generator, and 'bignum' math methods for manually performing crypto calculations on large multibyte integers.
+# Description: Bindings to OpenSSL libssl and libcrypto, plus custom SSH pubkey parsers. Supports RSA, DSA and EC curves P-256, P-384 and P-521. Cryptographic signatures can either be created and verified manually or via x509 certificates. AES can be used in cbc, ctr or gcm mode for symmetric encryption; RSA for asymmetric (public key) encryption or EC for Diffie Hellman. High-level envelope functions combine RSA and AES for encrypting arbitrary sized data. Other utilities include key generators, hash functions (md5, sha1, sha256, etc), base64 encoder, a secure random number generator, and 'bignum' math methods for manually performing crypto calculations on large multibyte integers.
 # License: MIT + file LICENSE
 # URL: https://github.com/jeroenooms/openssl#readme
 # BugReports: https://github.com/jeroenooms/openssl/issues
-# SystemRequirements: OpenSSL >= 1.0.0
+# SystemRequirements: OpenSSL >= 1.0.1
 # VignetteBuilder: knitr
-# Suggests: testthat, digest, knitr, rmarkdown, jsonlite
-# RoxygenNote: 5.0.1
+# Suggests: testthat, digest, knitr, rmarkdown, jsonlite, jose
+# RoxygenNote: 5.0.1.9000
 # NeedsCompilation: yes
-# Packaged: 2016-05-04 12:09:19 UTC; jeroen
+# Packaged: 2016-12-30 21:26:04 UTC; jeroen
 # Author: Jeroen Ooms [cre, aut], Oliver Keyes [ctb]
 # Maintainer: Jeroen Ooms <jeroen.ooms@stat.ucla.edu>
 # Repository: CRAN
-# Date/Publication: 2016-05-04 18:04:26
+# Date/Publication: 2016-12-31 01:41:12
 
 # See
 # http://docs.continuum.io/conda/build.html for

@@ -1,0 +1,27 @@
+package:
+  name: pygpu
+  version: "0.6.2"
+
+source:
+  git_url: https://github.com/Theano/libgpuarray.git
+  git_tag: v0.6.2
+
+requirements:
+  build:
+    - m2-git         [win]
+    - m2-filesystem  [win]
+    - git            [not win]
+    - python
+    - cython
+    - numpy
+    - mako
+    - libgpuarray ==0.6.2
+    - setuptools
+  run:
+    - python
+    - libgpuarray ==0.6.2
+    - numpy
+    - mako
+
+about:
+  license: BSD

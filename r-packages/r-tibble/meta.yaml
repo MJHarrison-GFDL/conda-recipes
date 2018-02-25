@@ -1,0 +1,94 @@
+{% set version = '1.3.3' %}
+
+{% set posix = 'm2-' if win else '' %}
+{% set native = 'm2w64-' if win else '' %}
+
+package:
+  name: r-tibble
+  version: {{ version|replace("-", "_") }}
+
+source:
+  fn: tibble_{{ version }}.tar.gz
+  url:
+    - https://cran.r-project.org/src/contrib/tibble_{{ version }}.tar.gz
+    - https://cran.r-project.org/src/contrib/Archive/tibble/tibble_{{ version }}.tar.gz
+
+
+  sha256: 802ec8346eae2397a2fc64b254cf80a67c7832cb5211328336f45053ea2518ae
+  # patches:
+   # List any patch files here
+   # - fix.patch
+
+build:
+  # If this is a new build for the same version, increment the build number.
+  number: 0
+
+  # This is required to make R link correctly on Linux.
+  rpaths:
+    - lib/R/lib/
+    - lib/
+
+# Suggests: covr, dplyr, knitr (>= 1.5.32), microbenchmark, nycflights13, testthat, rmarkdown, withr
+requirements:
+  build:
+    - r-base
+    - r-rcpp >=0.12.3
+    - r-rlang
+    - posix                # [win]
+    - {{native}}toolchain  # [win]
+    - gcc                  # [not win]
+
+  run:
+    - r-base
+    - r-rcpp >=0.12.3
+    - r-rlang
+    - {{native}}gcc-libs   # [win]
+    - libgcc               # [not win]
+
+test:
+  commands:
+    # You can put additional test commands to be run here.
+    - $R -e "library('tibble')"  # [not win]
+    - "\"%R%\" -e \"library('tibble')\""  # [win]
+
+  # You can also put a file called run_test.py, run_test.sh, or run_test.bat
+  # in the recipe that will be run at test time.
+
+  # requires:
+    # Put any additional test requirements here.
+
+about:
+  home: http://tibble.tidyverse.org/, https://github.com/tidyverse/tibble
+  license: MIT + file LICENSE
+  summary: Provides a 'tbl_df' class (the 'tibble') that provides stricter checking and better
+    formatting than the traditional data frame.
+  license_family: MIT
+
+# The original CRAN metadata for this package was:
+
+# Package: tibble
+# Encoding: UTF-8
+# Version: 1.3.3
+# Title: Simple Data Frames
+# Description: Provides a 'tbl_df' class (the 'tibble') that provides stricter checking and better formatting than the traditional data frame.
+# Authors@R: c( person("Kirill", "Muller", , "krlmlr+r@mailbox.org", c("aut", "cre")), person("Hadley", "Wickham", , "hadley@rstudio.com", "aut"), person("Romain", "Francois", , "romain@r-enthusiasts.com", "ctb"), person("RStudio", role = "cph") )
+# URL: http://tibble.tidyverse.org/, https://github.com/tidyverse/tibble
+# BugReports: https://github.com/tidyverse/tibble/issues
+# Depends: R (>= 3.1.0)
+# Imports: methods, rlang, Rcpp (>= 0.12.3), utils
+# Suggests: covr, dplyr, knitr (>= 1.5.32), microbenchmark, nycflights13, testthat, rmarkdown, withr
+# LinkingTo: Rcpp
+# LazyData: yes
+# License: MIT + file LICENSE
+# RoxygenNote: 6.0.1
+# VignetteBuilder: knitr
+# NeedsCompilation: yes
+# Packaged: 2017-05-27 20:13:19 UTC; muelleki
+# Author: Kirill Muller [aut, cre], Hadley Wickham [aut], Romain Francois [ctb], RStudio [cph]
+# Maintainer: Kirill Muller <krlmlr+r@mailbox.org>
+# Repository: CRAN
+# Date/Publication: 2017-05-28 07:21:53 UTC
+
+# See
+# http://docs.continuum.io/conda/build.html for
+# more information about meta.yaml

@@ -4,7 +4,8 @@
 mv DESCRIPTION DESCRIPTION.old
 grep -v '^Priority: ' DESCRIPTION.old > DESCRIPTION
 
-$R CMD INSTALL --build .
+DISPLAY=:0 \
+  $R CMD INSTALL --build . --configure-args="--disable-ftgl"
 
 # Add more build steps here, if they are necessary.
 

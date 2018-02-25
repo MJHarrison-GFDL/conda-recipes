@@ -1,9 +1,11 @@
 #!/bin/bash
 
-sed s:'@PREFIX@':"$PREFIX":g -i src/fccfg.c
-
 chmod +x configure
-./configure --prefix $PREFIX --enable-libxml2 --disable-docs
+./configure --prefix $PREFIX --enable-libxml2 --disable-docs --disable-iconv
+
+if [[ $(uname) == Darwin ]]; then
+    export DYLD_FALLBACK_LIBRARY_PATH=${PREFIX}/lib
+fi
 
 make
 make install

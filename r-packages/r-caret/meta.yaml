@@ -1,40 +1,38 @@
+{% set version = '6.0-76' %}
+
 {% set posix = 'm2-' if win else '' %}
 {% set native = 'm2w64-' if win else '' %}
 
 package:
   name: r-caret
-  # Note that conda versions cannot contain -, so any -'s in the version have
-  # been replaced with _'s.
-  version: "6.0_68"
+  version: {{ version|replace("-", "_") }}
 
 source:
-  fn: caret_6.0-68.tar.gz
+  fn: caret_{{ version }}.tar.gz
   url:
-    - http://cran.r-project.org/src/contrib/caret_6.0-68.tar.gz
-    - http://cran.r-project.org/src/contrib/Archive/caret/caret_6.0-68.tar.gz
+    - https://cran.r-project.org/src/contrib/caret_{{ version }}.tar.gz
+    - https://cran.r-project.org/src/contrib/Archive/caret/caret_{{ version }}.tar.gz
 
 
-  # You can add a hash for the file here, like md5 or sha1
-  # md5: 49448ba4863157652311cc5ea4fea3ea
-  # sha1: 3bcfbee008276084cbb37a2b453963c61176a322
+  sha256: 8c210893d9be02b5ce09153302d72205dba8bab47c077db4c9e62259efef61f0
   # patches:
    # List any patch files here
    # - fix.patch
 
 build:
-  # If this is a new build for the same version, increment the build
-  # number. If you do not include this key, it defaults to 0.
-  # number: 1
+  # If this is a new build for the same version, increment the build number.
+  number: 0
 
   # This is required to make R link correctly on Linux.
   rpaths:
     - lib/R/lib/
     - lib/
 
-# Suggests: BradleyTerry2, e1071, earth (>= 2.2-3), fastICA, gam, ipred, kernlab, klaR, MASS, ellipse, mda, mgcv, mlbench, nnet, party (>= 0.9-99992), pls, pROC (>= 1.8), proxy, randomForest, RANN, spls, subselect, pamr, superpc, Cubist, testthat (>= 0.9.1)
+# Suggests: BradleyTerry2, e1071, earth (>= 2.2-3), fastICA, gam, ipred, kernlab, klaR, MASS, ellipse, mda, mgcv, mlbench, MLmetrics, nnet, party (>= 0.9-99992), pls, pROC, proxy, randomForest, RANN, spls, subselect, pamr, superpc, Cubist, testthat (>= 0.9.1)
 requirements:
   build:
     - r-base
+    - r-modelmetrics >=1.1.0
     - r-car
     - r-foreach
     - r-ggplot2
@@ -42,12 +40,13 @@ requirements:
     - r-nlme
     - r-plyr
     - r-reshape2
-    - posix               # [win]
-    - {{native}}toolchain # [win]
-    - gcc                 # [not win]
+    - posix                # [win]
+    - {{native}}toolchain  # [win]
+    - gcc                  # [not win]
 
   run:
     - r-base
+    - r-modelmetrics >=1.1.0
     - r-car
     - r-foreach
     - r-ggplot2
@@ -55,12 +54,14 @@ requirements:
     - r-nlme
     - r-plyr
     - r-reshape2
+    - {{native}}gcc-libs   # [win]
+    - libgcc               # [not win]
 
 test:
   commands:
     # You can put additional test commands to be run here.
-    - $R -e "library('caret')" # [not win]
-    - "\"%R%\" -e \"library('caret')\"" # [win]
+    - $R -e "library('caret')"  # [not win]
+    - "\"%R%\" -e \"library('caret')\""  # [win]
 
   # You can also put a file called run_test.py, run_test.sh, or run_test.bat
   # in the recipe that will be run at test time.
@@ -77,22 +78,22 @@ about:
 # The original CRAN metadata for this package was:
 
 # Package: caret
-# Version: 6.0-68
-# Date: 2016-04-10
+# Version: 6.0-76
 # Title: Classification and Regression Training
-# Author: Max Kuhn. Contributions from Jed Wing, Steve Weston, Andre Williams, Chris Keefer, Allan Engelhardt, Tony Cooper, Zachary Mayer, Brenton Kenkel, the R Core Team, Michael Benesty, Reynald Lescarbeau, Andrew Ziem, Luca Scrucca, Yuan Tang, and Can Candan.
+# Author: Max Kuhn. Contributions from Jed Wing, Steve Weston, Andre Williams, Chris Keefer, Allan Engelhardt, Tony Cooper, Zachary Mayer, Brenton Kenkel, the R Core Team, Michael Benesty, Reynald Lescarbeau, Andrew Ziem, Luca Scrucca, Yuan Tang, Can Candan, and Tyler Hunt.
 # Description: Misc functions for training and plotting classification and regression models.
-# Maintainer: Max Kuhn <Max.Kuhn@pfizer.com>
+# Maintainer: Max Kuhn <mxkuhn@gmail.com>
 # Depends: R (>= 2.10), lattice (>= 0.20), ggplot2
 # URL: https://github.com/topepo/caret/
 # BugReports: https://github.com/topepo/caret/issues
-# Imports: car, foreach, methods, plyr, nlme, reshape2, stats, stats4, utils, grDevices
-# Suggests: BradleyTerry2, e1071, earth (>= 2.2-3), fastICA, gam, ipred, kernlab, klaR, MASS, ellipse, mda, mgcv, mlbench, nnet, party (>= 0.9-99992), pls, pROC (>= 1.8), proxy, randomForest, RANN, spls, subselect, pamr, superpc, Cubist, testthat (>= 0.9.1)
+# Imports: car, foreach, methods, plyr, ModelMetrics (>= 1.1.0), nlme, reshape2, stats, stats4, utils, grDevices
+# Suggests: BradleyTerry2, e1071, earth (>= 2.2-3), fastICA, gam, ipred, kernlab, klaR, MASS, ellipse, mda, mgcv, mlbench, MLmetrics, nnet, party (>= 0.9-99992), pls, pROC, proxy, randomForest, RANN, spls, subselect, pamr, superpc, Cubist, testthat (>= 0.9.1)
 # License: GPL (>= 2)
+# RoxygenNote: 6.0.1
 # NeedsCompilation: yes
-# Packaged: 2016-04-10 14:37:08 UTC; kuhna03
+# Packaged: 2017-04-18 01:00:51 UTC; max
 # Repository: CRAN
-# Date/Publication: 2016-04-11 09:06:33
+# Date/Publication: 2017-04-18 07:21:15 UTC
 
 # See
 # http://docs.continuum.io/conda/build.html for

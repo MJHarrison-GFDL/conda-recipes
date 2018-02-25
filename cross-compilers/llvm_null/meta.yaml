@@ -1,0 +1,22 @@
+package:
+  name: llvm-suite
+
+outputs:
+
+  - name: aaa
+    requirements:
+      run:
+        - {{ pin_subpackage('bbb', exact=True) }}
+
+  - name: bbb
+    requirements:
+      run:
+        - {{ pin_subpackage('ccc', exact=True) }}
+
+  - name: ccc
+    requirements:
+      run:
+        - {{ pin_subpackage('ddd', exact=True) }}
+
+  - name: ddd
+
