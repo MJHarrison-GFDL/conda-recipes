@@ -9,12 +9,12 @@ source:
 
 requirements:
   build:
-    - libnetcdf 4.4.0
+    - libnetcdf 4.4.1
     - curl
     - hdf5
     - zlib
   run:
-    - libnetcdf 4.4.0
+    - libnetcdf 4.4.1
     - curl
     - hdf5
     - zlib
